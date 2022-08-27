@@ -28,6 +28,7 @@ using System.Net;
 using System.IO;
 using INGdemo.Helpers;
 
+//
 namespace INGdemo.Models
 {
     class SpeechRecognitionSettings
@@ -150,6 +151,9 @@ namespace INGdemo.Models
             return new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
         }
 
+
+        //chunk 块
+        //异步处理函数：语音识别任务
         public async Task<string> GetAaiWxAsrs(short []chunk, 
                                   string speech_id, 
                                   int end_flag, 
@@ -159,7 +163,7 @@ namespace INGdemo.Models
             var Params = new JObject();
 
             int chunk_len = chunk.Length * 2;
-            var bytes = new byte[chunk_len];
+            var bytes = new byte[chunk_len];    //块长度
             Buffer.BlockCopy(chunk, 0, bytes, 0, bytes.Length);
             var speech_chunk = Convert.ToBase64String(bytes);
 
@@ -310,6 +314,7 @@ namespace INGdemo.Models
         Label label;
         Label labelInfo;
         ADPCMDecoder Decoder;
+        SBCDecoder sbc_Decoder;
         IPCMAudio Player;
         Slider Gain;
         Label GainInd;
@@ -317,6 +322,7 @@ namespace INGdemo.Models
         Button BtnTalk;
         Picker EnginePicker;
         Picker SamplingRatePicker;
+        Picker AlgorithmPicker;
         Label STTResult;
 
         List<short> AllSamples;
@@ -360,11 +366,19 @@ namespace INGdemo.Models
             BtnTalk.Pressed += BtnTalk_Pressed;
             BtnTalk.Released += BtnTalk_Released;
 
+            //语音识别功能选择区
             EnginePicker = new Picker { Title = "Select" };
             EnginePicker.Items.Add("(Off)");            
             EnginePicker.Items.Add("Google (普通话)");
             EnginePicker.Items.Add("Google (English)");
             //EnginePicker.Items.Add("Tencent AI Open Platform");
+
+            //算法模式选择区
+            AlgorithmPicker = new Picker { Title = "Select" };
+            AlgorithmPicker.Items.Add("ADPCM");
+            AlgorithmPicker.Items.Add("SBC");
+            AlgorithmPicker.SelectedIndex = 1;
+            AlgorithmPicker.SelectedIndexChanged += AlgorithmPicker_SelectedIndexChanged;
 
             SamplingRatePicker = new Picker { Title = "Select" };
             SamplingRatePicker.Items.Add("8000");
@@ -372,6 +386,7 @@ namespace INGdemo.Models
             SamplingRatePicker.Items.Add("24000");
             SamplingRatePicker.Items.Add("32000");
             SamplingRatePicker.SelectedIndex = 1;
+            //selectIndex属性值发生改变事件
             SamplingRatePicker.SelectedIndexChanged += SamplingRatePicker_SelectedIndexChanged;
 
             STTResult = new Label();
@@ -381,9 +396,14 @@ namespace INGdemo.Models
             label.HorizontalOptions = LayoutOptions.Center;
             label.FontSize = 10;
 
+            //麦克风按钮
             layout.Children.Add(BtnTalk);
             layout.Children.Add(labelInfo);
             layout.Children.Add(MakeSlider("Gain", out Gain));
+            //插入音频编解码算法选择
+            layout.Children.Add(new Label { Text = "Algorithm", Style = Device.Styles.SubtitleStyle });
+            layout.Children.Add(AlgorithmPicker);
+            layout.Children.Add(label);
             layout.Children.Add(new Label { Text = "Sampling Rate", Style = Device.Styles.SubtitleStyle });
             layout.Children.Add(SamplingRatePicker);
             layout.Children.Add(label);
@@ -401,6 +421,11 @@ namespace INGdemo.Models
             Title = SERVICE_NAME;
         }
 
+        private void AlgorithmPicker_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+        }
+
         private void SamplingRatePicker_SelectedIndexChanged(object sender, EventArgs e)
         {
             EnginePicker.IsEnabled = int.Parse(SamplingRatePicker.SelectedItem.ToString()) == SpeechRecognitionSettings.SAMPLE_RATE;
@@ -415,6 +440,7 @@ namespace INGdemo.Models
 
             ISpeechRecognition engine;
 
+            //判断AI语音识别引擎选择
             switch (EnginePicker.SelectedIndex)
             {
                 case 1:
@@ -434,6 +460,7 @@ namespace INGdemo.Models
             {
                 STTResult.Text = await engine.Recognize(samples);
             }
+            //catch捕捉try抛出的错误
             catch (Exception ex)
             {
                 STTResult.Text = "error: " + ex.Message;
@@ -443,9 +470,13 @@ namespace INGdemo.Models
         async private void BtnTalk_Pressed(object sender, EventArgs e)
         {
             int samplingRate = int.Parse(SamplingRatePicker.SelectedItem.ToString());
+            //识别音频编解码算法
+            string audioCodec = AlgorithmPicker.SelectedItem.ToString();
+            //选择解码器
             Decoder.Reset();
             Player.Play(samplingRate);
             AllSamples.Clear();
+            //启动音频输入异步处理函数
             await charCtrl.WriteAsync(new byte[1] { CMD_MIC_OPEN });
         }
 

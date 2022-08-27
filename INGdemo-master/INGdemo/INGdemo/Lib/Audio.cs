@@ -12,6 +12,8 @@ namespace INGdemo.Lib
         void Stop();
     }
 
+
+//----------------------------------------------------ADPCM编解码----------------------------------------------------------------
     class ADPCMState
     {
         internal Int16 predicated;
@@ -174,5 +176,5 @@ namespace INGdemo.Lib
         {
             foreach (var x in data) Decode(x);
         }
-    }
+    }  
 }
