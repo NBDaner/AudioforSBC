@@ -49,7 +49,7 @@ namespace INGdemo.Models
         }
     }
 
-    internal class TencentAiPlatform
+    internal class TencentAiPlatform  //腾讯AI语音识别平台
     {
 
         static readonly string url_preffix = "https://api.ai.qq.com/fcgi-bin/";
@@ -193,7 +193,7 @@ namespace INGdemo.Models
         }
     }
 
-    class GoogleRecognizer : ISpeechRecognition
+    class GoogleRecognizer : ISpeechRecognition   //谷歌AI语音识别
     {
 
         string Lang;
@@ -293,7 +293,7 @@ namespace INGdemo.Models
         }
     }
 
-    class AudioViewer : ContentPage
+    class AudioViewer : ContentPage    //内容页
     {
         static public Guid GUID_SERVICE = new Guid("00000001-494e-4743-4849-505355554944");
         static public Guid GUID_CHAR_CTRL = new Guid("bf83f3f1-399a-414d-9035-ce64ceb3ff67");
