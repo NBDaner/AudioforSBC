@@ -49,7 +49,7 @@ namespace INGdemo.Lib
         public int[,,] sb_sample = new int[16, 2, 8];
 
         /* original pcm audio samples */
-        public readonly short[,] pcm_sample = new short[2, 16*8];       
+        public short[,] pcm_sample = new short[2, 16*8];       
     }
 
     public class sbc_decoder_state
@@ -78,7 +78,7 @@ namespace INGdemo.Lib
         public byte bitpool;
         public byte endian;
 
-        public sbc_priv priv;            
+        public sbc_priv priv;     
     }
 
 }

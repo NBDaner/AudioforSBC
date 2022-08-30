@@ -42,6 +42,11 @@ namespace INGdemo.Lib
         public const int  SCALE_NPROTO4_TBL = 11;    /*  八子带dec sbc_proto_8_80m0系数：11*/    
         public const int  SCALE_NPROTO8_TBL = 11;    /*  八子带dec sbc_proto_8_80m1系数：11*/
 
+        public const int SCALE4_STAGED1_BITS = 15;
+        public const int SCALE4_STAGED2_BITS = 16;
+        public const int SCALE8_STAGED1_BITS = 15;
+        public const int SCALE8_STAGED2_BITS = 16;
+
 
         public const byte SBC_SYNCWORD = 0x9C;
     } 
@@ -71,6 +76,36 @@ namespace INGdemo.Lib
         static public int SN8(int i)
         {
             return  i >> Constants.SCALE_NPROTO8_TBL; 
+        }
+
+        static public int MUL(int a, int b)
+        {
+            return a * b;
+        }
+
+        static public int MULA(int a, int b, int res)
+        {
+            return a * b + res;
+        }
+
+        static public int SCALE4_STAGED1(int i)
+        {
+            return i >> Constants.SCALE4_STAGED1_BITS;
+        }
+
+        static public int SCALE4_STAGED2(int i)
+        {
+            return i >> Constants.SCALE4_STAGED2_BITS;
+        }
+
+        static public int SCALE8_STAGED1(int i)
+        {
+            return i >> Constants.SCALE8_STAGED1_BITS;
+        }
+
+        static public int SCALE8_STAGED2(int i)
+        {
+            return i >> Constants.SCALE8_STAGED2_BITS;
         }
 
         static public byte sbc_crc8(byte[] data, int len)

@@ -8,20 +8,20 @@ namespace INGdemo.Lib
     public class SBCProtcol 
     {
 
-        static readonly int[,] sbc_offset4 = {
+        public static int[,] sbc_offset4 = {
             { -1, 0, 0, 0 },
 	        { -2, 0, 0, 1 },
 	        { -2, 0, 0, 1 },
 	        { -2, 0, 0, 1 }
         };
 
-        static readonly int[,] sbc_offset8 = {
+        public static int[,] sbc_offset8 = {
             { -2, 0, 0, 0, 0, 0, 0, 1 },
             { -3, 0, 0, 0, 0, 0, 1, 2 },
             { -4, 0, 0, 0, 0, 0, 1, 2 },
             { -4, 0, 0, 0, 0, 0, 1, 2 }    
         };
-        static readonly int[] sbc_proto_4_40m0 = {
+        public static int[] sbc_proto_4_40m0 = {
             exp.SS4(0x00000000),            exp.SS4(exp.CI(0xffa6982f)),    exp.SS4(exp.CI(0xfba93848)),    exp.SS4(0x0456c7b8),
 	        exp.SS4(0x005967d1),            exp.SS4(exp.CI(0xfffb9ac7)),    exp.SS4(exp.CI(0xff589157)),    exp.SS4(exp.CI(0xf9c2a8d8)),
 	        exp.SS4(0x027c1434),            exp.SS4(0x0019118b),            exp.SS4(exp.CI(0xfff3c74c)),    exp.SS4(exp.CI(0xff137330)),
@@ -29,7 +29,7 @@ namespace INGdemo.Lib
 	        exp.SS4(exp.CI(0xfef84470)),    exp.SS4(exp.CI(0xf6fb4370)),    exp.SS4(exp.CI(0xffcdc351)),    exp.SS4(exp.CI(0xffe01dc7))
         };
 
-        static readonly  int[] sbc_proto_4_40m1 = {
+        public static int[] sbc_proto_4_40m1 = {
         	exp.SS4(exp.CI(0xffe090ce)),    exp.SS4(exp.CI(0xff2c0475)),    exp.SS4(exp.CI(0xf694f800)),    exp.SS4(exp.CI(0xff2c0475)),
 	        exp.SS4(exp.CI(0xffe090ce)),    exp.SS4(exp.CI(0xffe01dc7)),    exp.SS4(exp.CI(0xffcdc351)),    exp.SS4(exp.CI(0xf6fb4370)),
 	        exp.SS4(exp.CI(0xfef84470)),    exp.SS4(exp.CI(0xffe99b00)),    exp.SS4(exp.CI(0xfff0b71a)),    exp.SS4(0x00ec1b8b),
@@ -37,7 +37,7 @@ namespace INGdemo.Lib
 	        exp.SS4(0x027c1434),            exp.SS4(exp.CI(0xf9c2a8d8)),    exp.SS4(exp.CI(0xff589157)),    exp.SS4(exp.CI(0xfffb9ac7))
         };
 
-        static readonly int[] sbc_proto_8_80m0 = {
+        public static int[] sbc_proto_8_80m0 = {
             exp.SS8(0x00000000),            exp.SS8(exp.CI(0xfe8d1970)),    exp.SS8(exp.CI(0xee979f00)),    exp.SS8(0x11686100),
             exp.SS8(0x0172e690),            exp.SS8(exp.CI(0xfff5bd1a)),    exp.SS8(exp.CI(0xfdf1c8d4)),    exp.SS8(exp.CI(0xeac182c0)),
             exp.SS8(0x0d9daee0),            exp.SS8(0x00e530da),            exp.SS8(exp.CI(0xffe9811d)),    exp.SS8(exp.CI(0xfd52986c)),
@@ -50,7 +50,7 @@ namespace INGdemo.Lib
             exp.SS8(exp.CI(0xfc1417b8)),    exp.SS8(exp.CI(0xdac7bb40)),    exp.SS8(exp.CI(0xfdbb828c)),    exp.SS8(exp.CI(0xff762170))
         };
 
-        static readonly int[] sbc_proto_8_80m1 = {
+        public static int[] sbc_proto_8_80m1 = {
             exp.SS8(exp.CI(0xff7c272c)),    exp.SS8(exp.CI(0xfcb02620)),    exp.SS8(exp.CI(0xda612700)),    exp.SS8(exp.CI(0xfcb02620)),
             exp.SS8(exp.CI(0xff7c272c)),    exp.SS8(exp.CI(0xff762170)),    exp.SS8(exp.CI(0xfdbb828c)),    exp.SS8(exp.CI(0xdac7bb40)),
             exp.SS8(exp.CI(0xfc1417b8)),    exp.SS8(exp.CI(0xff8b1a31)),    exp.SS8(exp.CI(0xff7d4914)),    exp.SS8(exp.CI(0xff405e01)),
@@ -63,7 +63,7 @@ namespace INGdemo.Lib
             exp.SS8(0x0d9daee0),            exp.SS8(exp.CI(0xeac182c0)),    exp.SS8(exp.CI(0xfdf1c8d4)),    exp.SS8(exp.CI(0xfff5bd1a))
         };
 
-        static readonly int[,] synmatrix4 = {
+        public static int[,] synmatrix4 = {
             { exp.SN4(0x05a82798),          exp.SN4(exp.CI(0xfa57d868)),    exp.SN4(exp.CI(0xfa57d868)),    exp.SN4(0x05a82798) },
 	        { exp.SN4(0x030fbc54),          exp.SN4(exp.CI(0xf89be510)),    exp.SN4(0x07641af0),            exp.SN4(exp.CI(0xfcf043ac)) },
 	        { exp.SN4(0x00000000),          exp.SN4(0x00000000),            exp.SN4(0x00000000),            exp.SN4(0x00000000) },
@@ -74,7 +74,7 @@ namespace INGdemo.Lib
 	        { exp.SN4(exp.CI(0xf89be510)),  exp.SN4(exp.CI(0xfcf043ac)),    exp.SN4(0x030fbc54),            exp.SN4(0x07641af0) }
         };
 
-        static readonly int[] synmatrix8 = {
+        public static int[] synmatrix8 = {
             exp.SN8(0x05a82798),            exp.SN8(0x0471ced0),            exp.SN8(0x07d8a5f0),            exp.SN8(0x018f8b84), 
             exp.SN8(0x06a6d988),            exp.SN8(0x030fbc54),            exp.SN8(0x07641af0),            exp.SN8(exp.CI(0xf8000000))
         };
