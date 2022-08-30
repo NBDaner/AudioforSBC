@@ -59,7 +59,7 @@ namespace INGdemo.Lib
 
             //polyphase synthesis
             //多相分析参数表：
-            //@para priv->dec_state编码器的     priv->frame-sbc编码后的帧数据
+            //@para priv.dec_state编码器的     priv.frame-sbc编码后的帧数据
 
             //经过量化解析之后才会送到这个位置
             samples = sbc_synthesize_audio(sbc.priv.dec_state, sbc.priv.frame);
@@ -547,8 +547,16 @@ namespace INGdemo.Lib
         void sbc_synthesize_four(sbc_decoder_state state, sbc_frame frame, int ch, int blk)
         {
             int i, k, idx;
-            int32_t *v = state->V[ch];   		//the row addr for V[2,170] 
-            int *offset = state->offset[ch];    //the row addr for offset[2,16] 
+
+            //获取单通道的V值
+            int[] v = new int[state.V.Rank];
+            for(i = 0; i < state.V.Rank; i++)
+                v[i] = state.V[ch,i];
+
+            //获取单通道的offset值
+            int[] offset = new int[state.offset.Rank];
+            for(i = 0; i < state.offset.Rank; i++)
+                offset[i] = state.offset[ch,i];  
 
 
             //Matrixing
@@ -559,7 +567,9 @@ namespace INGdemo.Lib
                 offset[i]--;
                 if (offset[i] < 0) {
                     offset[i] = 79;
-                    memcpy(v + 80, v, 9 * sizeof(*v));
+                    //memcpy(v + 80, v, 9 * sizeof(*v));
+                    for(int j = 0; i < 9 * sizeof(int); j++)
+                        v[80 + j] = v[j];
                 }
 
                 /* Distribute the new matrix value to the shifted position */
@@ -572,7 +582,6 @@ namespace INGdemo.Lib
             }
 
             /* Compute the samples */
-            //低四位
             for (idx = 0, i = 0; i < 4; i++, idx += 5) {
                 k = (i + 4) & 0xf;
 
@@ -580,24 +589,27 @@ namespace INGdemo.Lib
                 //括号内的结果最终右移15位（>>15）
                 //角标计算方法
                 //frame.pcm_sample[ch,blk * 4 + i] = sbc_clip16(SCALE4_STAGED1(
-                frame.pcm_sample[ch,blk * 4 + i] = exp.SCALE4_STAGED2(
-                    exp.MULA(v[offset[i] + 0], sbc_proto_4_40m0[idx + 0],//每两个为一组
-                    exp.MULA(v[offset[k] + 1], sbc_proto_4_40m1[idx + 0],//
-                    exp.MULA(v[offset[i] + 2], sbc_proto_4_40m0[idx + 1],
-                    exp.MULA(v[offset[k] + 3], sbc_proto_4_40m1[idx + 1],
-                    exp.MULA(v[offset[i] + 4], sbc_proto_4_40m0[idx + 2],
-                    exp.MULA(v[offset[k] + 5], sbc_proto_4_40m1[idx + 2],
-                    exp.MULA(v[offset[i] + 6], sbc_proto_4_40m0[idx + 3],
-                    exp.MULA(v[offset[k] + 7], sbc_proto_4_40m1[idx + 3],
-                    exp.MULA(v[offset[i] + 8], sbc_proto_4_40m0[idx + 4],
-                    exp.MUL( v[offset[k] + 9], sbc_proto_4_40m1[idx + 4])))))))))));
+                frame.pcm_sample[ch,blk * 4 + i] = (short)exp.SCALE4_STAGED2(
+                    exp.MULA(v[offset[i] + 0], SBCProtcol.sbc_proto_4_40m0[idx + 0],//每两个为一组
+                    exp.MULA(v[offset[k] + 1], SBCProtcol.sbc_proto_4_40m1[idx + 0],//
+                    exp.MULA(v[offset[i] + 2], SBCProtcol.sbc_proto_4_40m0[idx + 1],
+                    exp.MULA(v[offset[k] + 3], SBCProtcol.sbc_proto_4_40m1[idx + 1],
+                    exp.MULA(v[offset[i] + 4], SBCProtcol.sbc_proto_4_40m0[idx + 2],
+                    exp.MULA(v[offset[k] + 5], SBCProtcol.sbc_proto_4_40m1[idx + 2],
+                    exp.MULA(v[offset[i] + 6], SBCProtcol.sbc_proto_4_40m0[idx + 3],
+                    exp.MULA(v[offset[k] + 7], SBCProtcol.sbc_proto_4_40m1[idx + 3],
+                    exp.MULA(v[offset[i] + 8], SBCProtcol.sbc_proto_4_40m0[idx + 4],
+                    exp.MUL( v[offset[k] + 9], SBCProtcol.sbc_proto_4_40m1[idx + 4])))))))))));
             }
         }
 
         void sbc_synthesize_eight(sbc_decoder_state state, sbc_frame frame, int ch, int blk)
         {
             int i, j, k, idx;
-            int *offset = state->offset[ch];
+            int[] offset = new int[state.offset.Rank];
+            for(i = 0; i < state.offset.Rank; i++)
+                offset[i] = state.offset[ch,i];
+
 
             for (i = 0; i < 16; i++) {
                 /* Shifting */
@@ -606,19 +618,19 @@ namespace INGdemo.Lib
                     offset[i] = 159;
                 }
                 }
-                        state->V[ch, 160] = state->V[ch,0];
-                        state->V[ch, 161] = state->V[ch,1];
-                        state->V[ch, 162] = state->V[ch,2];
-                        state->V[ch, 163] = state->V[ch,3];
-                        state->V[ch, 164] = state->V[ch,4];
-                        state->V[ch, 165] = state->V[ch,5];
-                        state->V[ch, 166] = state->V[ch,6];
-                        state->V[ch, 167] = state->V[ch,7];
-                        state->V[ch, 168] = state->V[ch,0];
+                        state.V[ch, 160] = state.V[ch,0];
+                        state.V[ch, 161] = state.V[ch,1];
+                        state.V[ch, 162] = state.V[ch,2];
+                        state.V[ch, 163] = state.V[ch,3];
+                        state.V[ch, 164] = state.V[ch,4];
+                        state.V[ch, 165] = state.V[ch,5];
+                        state.V[ch, 166] = state.V[ch,6];
+                        state.V[ch, 167] = state.V[ch,7];
+                        state.V[ch, 168] = state.V[ch,0];
                 
             //	 Distribute the new matrix value to the shifted position 
             //	  it is too wast of time
-        /*			state->V[ch,offset[i]] = SCALE8_STAGED1(
+        /*			state.V[ch,offset[i]] = exp.SCALE8_STAGED1(
                     exp.MULA(SBCProtcol.synmatrix8[i,0], frame.sb_sample[blk,ch,0],
                     exp.MULA(SBCProtcol.synmatrix8[i,1], frame.sb_sample[blk,ch,1],
                     exp.MULA(SBCProtcol.synmatrix8[i,2], frame.sb_sample[blk,ch,2],
@@ -630,7 +642,7 @@ namespace INGdemo.Lib
                     
             */
         /*	yy.........  09.1.6 for optimization 	*/	
-                    int x[8];
+                int[] x = new int[8];
 
                         x[0] = frame.sb_sample[blk,ch,0];
                         x[1] = frame.sb_sample[blk,ch,1];
@@ -641,7 +653,7 @@ namespace INGdemo.Lib
                         x[6] = frame.sb_sample[blk,ch,6];
                         x[7] = frame.sb_sample[blk,ch,7];
                     
-                    int s[7];									
+                int[] s = new int[7];									
                     
                     s[0] = (x[0] + x[3]) + (x[4] + x[7]) - ((x[1] + x[2]) + (x[5] + x[6]));
                     
@@ -656,73 +668,73 @@ namespace INGdemo.Lib
 
                     s[7] = (x[0] + x[1]) + (x[2] + x[3]) + (x[4] + x[5]) + (x[6] + x[7]);
 
-                    state->V[ch,offset[0]] = SCALE8_STAGED1(exp.MUL(SBCProtcol.synmatrix8[0],s[0]));
+                    state.V[ch,offset[0]] = exp.SCALE8_STAGED1(exp.MUL(SBCProtcol.synmatrix8[0],s[0]));
                                 
-                        state->V[ch,offset[1]] = SCALE8_STAGED1(
+                        state.V[ch,offset[1]] = exp.SCALE8_STAGED1(
                         exp.MULA(SBCProtcol.synmatrix8[1],s[1],
                         exp.MULA(-SBCProtcol.synmatrix8[2],s[2],
                         exp.MULA(SBCProtcol.synmatrix8[3],s[3],
                         exp.MUL(SBCProtcol.synmatrix8[4],s[4])))));
                         
-                        state->V[ch,offset[2]] = SCALE8_STAGED1(
+                        state.V[ch,offset[2]] = exp.SCALE8_STAGED1(
                         exp.MULA(SBCProtcol.synmatrix8[5],s[5],
                         exp.MUL(-SBCProtcol.synmatrix8[6],s[6])));
 
-                        state->V[ch,offset[3]] = SCALE8_STAGED1(
+                        state.V[ch,offset[3]] = exp.SCALE8_STAGED1(
                         exp.MULA(SBCProtcol.synmatrix8[3],s[1],
                         exp.MULA(-SBCProtcol.synmatrix8[1],s[2],
                         exp.MULA(SBCProtcol.synmatrix8[4],s[3],
                         exp.MUL(-SBCProtcol.synmatrix8[2],s[4])))));
                 
-                        state->V[ch,offset[4]] = 0;
+                        state.V[ch,offset[4]] = 0;
 
-                        state->V[ch,offset[5]] = SCALE8_STAGED1(
+                        state.V[ch,offset[5]] = exp.SCALE8_STAGED1(
                         exp.MULA(-SBCProtcol.synmatrix8[3],s[1],
                         exp.MULA(SBCProtcol.synmatrix8[1],s[2],
                         exp.MULA(-SBCProtcol.synmatrix8[4],s[3],
                         exp.MUL(SBCProtcol.synmatrix8[2],s[4])))));
 
-                        state->V[ch,offset[6]] = SCALE8_STAGED1(
+                        state.V[ch,offset[6]] = exp.SCALE8_STAGED1(
                         exp.MULA(-SBCProtcol.synmatrix8[5],s[5],
                         exp.MUL(SBCProtcol.synmatrix8[6],s[6])));
                         
-                        state->V[ch,offset[7]] = SCALE8_STAGED1(
+                        state.V[ch,offset[7]] = exp.SCALE8_STAGED1(
                         exp.MULA(-SBCProtcol.synmatrix8[1],s[1],
                         exp.MULA(SBCProtcol.synmatrix8[2],s[2],
                         exp.MULA(-SBCProtcol.synmatrix8[3],s[3],
                         exp.MUL(-SBCProtcol.synmatrix8[4],s[4])))));
 
-                        state->V[ch,offset[8]] = SCALE8_STAGED1(exp.MUL(-SBCProtcol.synmatrix8[0],s[0]));
+                        state.V[ch,offset[8]] = exp.SCALE8_STAGED1(exp.MUL(-SBCProtcol.synmatrix8[0],s[0]));
 
-                        state->V[ch,offset[9]] = SCALE8_STAGED1(
+                        state.V[ch,offset[9]] = exp.SCALE8_STAGED1(
                         exp.MULA(-SBCProtcol.synmatrix8[4],s[1],
                         exp.MULA(SBCProtcol.synmatrix8[3],s[2],
                         exp.MULA(SBCProtcol.synmatrix8[2],s[3],
                         exp.MUL(SBCProtcol.synmatrix8[1],s[4])))));
 
-                        state->V[ch,offset[10]] = SCALE8_STAGED1(
+                        state.V[ch,offset[10]] = exp.SCALE8_STAGED1(
                         exp.MULA(-SBCProtcol.synmatrix8[6],s[5],
                         exp.MUL(-SBCProtcol.synmatrix8[5],s[6])));
 
-                        state->V[ch,offset[11]] = SCALE8_STAGED1(
+                        state.V[ch,offset[11]] = exp.SCALE8_STAGED1(
                         exp.MULA(-SBCProtcol.synmatrix8[2],s[1],
                         exp.MULA(-SBCProtcol.synmatrix8[4],s[2],
                         exp.MULA(-SBCProtcol.synmatrix8[1],s[3],
                         exp.MUL(-SBCProtcol.synmatrix8[3],s[4])))));
 
-                        state->V[ch,offset[12]] = SCALE8_STAGED1(exp.MUL(SBCProtcol.synmatrix8[7],s[7]));
+                        state.V[ch,offset[12]] = exp.SCALE8_STAGED1(exp.MUL(SBCProtcol.synmatrix8[7],s[7]));
 
-                        state->V[ch,offset[13]] = SCALE8_STAGED1(
+                        state.V[ch,offset[13]] = exp.SCALE8_STAGED1(
                         exp.MULA(-SBCProtcol.synmatrix8[2],s[1],
                         exp.MULA(-SBCProtcol.synmatrix8[4],s[2],
                         exp.MULA(-SBCProtcol.synmatrix8[1],s[3],
                         exp.MUL(-SBCProtcol.synmatrix8[3],s[4])))));
 
-                        state->V[ch,offset[14]] = SCALE8_STAGED1(
+                        state.V[ch,offset[14]] = exp.SCALE8_STAGED1(
                         exp.MULA(-SBCProtcol.synmatrix8[6],s[5],
                         exp.MUL(-SBCProtcol.synmatrix8[5],s[6])));
 
-                        state->V[ch,offset[15]] = SCALE8_STAGED1(
+                        state.V[ch,offset[15]] = exp.SCALE8_STAGED1(
                         exp.MULA(-SBCProtcol.synmatrix8[4],s[1],
                         exp.MULA(SBCProtcol.synmatrix8[3],s[2],
                         exp.MULA(SBCProtcol.synmatrix8[2],s[3],
@@ -733,17 +745,17 @@ namespace INGdemo.Lib
                 k = (i + 8) & 0xf;
 
                 /* Store in output, Q0 */
-                frame.pcm_sample[ch,blk * 8 + i] = sbc_clip16(SCALE8_STAGED1(
-                    exp.MULA(state->V[ch,offset[i] + 0], sbc_proto_8_80m0[idx + 0],
-                    exp.MULA(state->V[ch,offset[k] + 1], sbc_proto_8_80m1[idx + 0],
-                    exp.MULA(state->V[ch,offset[i] + 2], sbc_proto_8_80m0[idx + 1],
-                    exp.MULA(state->V[ch,offset[k] + 3], sbc_proto_8_80m1[idx + 1],
-                    exp.MULA(state->V[ch,offset[i] + 4], sbc_proto_8_80m0[idx + 2],
-                    exp.MULA(state->V[ch,offset[k] + 5], sbc_proto_8_80m1[idx + 2],
-                    exp.MULA(state->V[ch,offset[i] + 6], sbc_proto_8_80m0[idx + 3],
-                    exp.MULA(state->V[ch,offset[k] + 7], sbc_proto_8_80m1[idx + 3],
-                    exp.MULA(state->V[ch,offset[i] + 8], sbc_proto_8_80m0[idx + 4],
-                    exp.MUL( state->V[ch,offset[k] + 9], sbc_proto_8_80m1[idx + 4]))))))))))));
+                frame.pcm_sample[ch,blk * 8 + i] = exp.sbc_clip16(exp.SCALE8_STAGED1(
+                    exp.MULA(state.V[ch,offset[i] + 0], SBCProtcol.sbc_proto_8_80m0[idx + 0],
+                    exp.MULA(state.V[ch,offset[k] + 1], SBCProtcol.sbc_proto_8_80m1[idx + 0],
+                    exp.MULA(state.V[ch,offset[i] + 2], SBCProtcol.sbc_proto_8_80m0[idx + 1],
+                    exp.MULA(state.V[ch,offset[k] + 3], SBCProtcol.sbc_proto_8_80m1[idx + 1],
+                    exp.MULA(state.V[ch,offset[i] + 4], SBCProtcol.sbc_proto_8_80m0[idx + 2],
+                    exp.MULA(state.V[ch,offset[k] + 5], SBCProtcol.sbc_proto_8_80m1[idx + 2],
+                    exp.MULA(state.V[ch,offset[i] + 6], SBCProtcol.sbc_proto_8_80m0[idx + 3],
+                    exp.MULA(state.V[ch,offset[k] + 7], SBCProtcol.sbc_proto_8_80m1[idx + 3],
+                    exp.MULA(state.V[ch,offset[i] + 8], SBCProtcol.sbc_proto_8_80m0[idx + 4],
+                    exp.MUL( state.V[ch,offset[k] + 9], SBCProtcol.sbc_proto_8_80m1[idx + 4]))))))))))));
             }
         }
 

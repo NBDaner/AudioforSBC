@@ -108,6 +108,16 @@ namespace INGdemo.Lib
             return i >> Constants.SCALE8_STAGED2_BITS;
         }
 
+        static public short sbc_clip16(int i)
+        {
+            if (i > 0x7FFF)    //32767
+                return 0x7FFF;
+            else if (i < -0x8000)  //-32768
+                return -0x8000;
+            else
+                return (short)i;
+        } 
+
         static public byte sbc_crc8(byte[] data, int len)
         {
             byte crc = 0x0f;
