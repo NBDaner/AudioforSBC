@@ -28,12 +28,19 @@ using System.Net;
 using System.IO;
 using INGdemo.Helpers;
 
-//
+//            
 namespace INGdemo.Models
 {
     class SpeechRecognitionSettings
     {
         public static int SAMPLE_RATE = 16000;
+    }
+
+    class AlgorithmRecognitionSettings
+    {
+        public static string Algorithm_SBC = "SBC";
+        public static string Algorithm_ADPCM = "ADPCM";
+        public static bool Algorithm_Switch2sbc = true;
     }
 
     interface ISpeechRecognition
@@ -316,6 +323,7 @@ namespace INGdemo.Models
         ADPCMDecoder Decoder;
         SBCDecoder sbc_Decoder;
         IPCMAudio Player;
+        ISBCAudio Player_;
         Slider Gain;
         Label GainInd;
         int CurrentGain = 0;
@@ -344,12 +352,13 @@ namespace INGdemo.Models
             GainInd.HorizontalOptions = LayoutOptions.End;
             layout.Children.Add(GainInd);
 
+
             return layout;
         }
 
         void InitUI()
         {
-            var layout = new StackLayout();
+            var layout = new StackLayout();//整体布局
             label = new Label();
 
             labelInfo = new Label();
@@ -401,6 +410,7 @@ namespace INGdemo.Models
             layout.Children.Add(labelInfo);
             layout.Children.Add(MakeSlider("Gain", out Gain));
             //插入音频编解码算法选择
+            layout.Children.Add(label); // 空白label作为空行插入
             layout.Children.Add(new Label { Text = "Algorithm", Style = Device.Styles.SubtitleStyle });
             layout.Children.Add(AlgorithmPicker);
             layout.Children.Add(label);
@@ -423,12 +433,20 @@ namespace INGdemo.Models
 
         private void AlgorithmPicker_SelectedIndexChanged(object sender, EventArgs e)
         {
-
+            if (AlgorithmPicker.SelectedItem.ToString() == AlgorithmRecognitionSettings.Algorithm_ADPCM)
+            {
+                AlgorithmRecognitionSettings.Algorithm_Switch2sbc = false;
+            }
+            else if (AlgorithmPicker.SelectedItem.ToString() == AlgorithmRecognitionSettings.Algorithm_SBC)
+            {
+                AlgorithmRecognitionSettings.Algorithm_Switch2sbc = true;
+            }
         }
 
         private void SamplingRatePicker_SelectedIndexChanged(object sender, EventArgs e)
         {
             EnginePicker.IsEnabled = int.Parse(SamplingRatePicker.SelectedItem.ToString()) == SpeechRecognitionSettings.SAMPLE_RATE;
+            
         }
 
         async private void BtnTalk_Released(object sender, EventArgs e)
@@ -458,7 +476,7 @@ namespace INGdemo.Models
             var samples = AllSamples.ToArray();
             try
             {
-                STTResult.Text = await engine.Recognize(samples);
+                STTResult.Text = await engine.Recognize(samples);  //语音转文字，并输入到最下方的文本框
             }
             //catch捕捉try抛出的错误
             catch (Exception ex)
@@ -469,12 +487,13 @@ namespace INGdemo.Models
 
         async private void BtnTalk_Pressed(object sender, EventArgs e)
         {
+
             int samplingRate = int.Parse(SamplingRatePicker.SelectedItem.ToString());
             //识别音频编解码算法
             string audioCodec = AlgorithmPicker.SelectedItem.ToString();
             //选择解码器
             Decoder.Reset();
-            Player.Play(samplingRate);
+            Player.Play(samplingRate);//调用音频播放器接口函数
             AllSamples.Clear();
             //启动音频输入异步处理函数
             await charCtrl.WriteAsync(new byte[1] { CMD_MIC_OPEN });
@@ -533,12 +552,24 @@ namespace INGdemo.Models
         public AudioViewer(IDevice ADevice, IReadOnlyList<IService> services)
         {
             AllSamples = new List<short>();
-            Decoder = new ADPCMDecoder(32000 / 10);
-            Player = DependencyService.Get<IPCMAudio>();
+            if (AlgorithmRecognitionSettings.Algorithm_Switch2sbc)
+            {
+                sbc_Decoder = new SBCDecoder();
+                Player = DependencyService.Get<ISBCAudio>();
+                sbc_Decoder.SBCOutput += Decoder_SBCOutput;
+            }
+            else if (!AlgorithmRecognitionSettings.Algorithm_Switch2sbc)
+            {
+                Decoder = new ADPCMDecoder(32000 / 10);
+                Player = DependencyService.Get<IPCMAudio>();
+                Decoder.PCMOutput += Decoder_PCMOutput;
+            }
+
+
             BleDevice = ADevice;
             InitUI();
             service = services.First((s) => s.Id == GUID_SERVICE);
-            Decoder.PCMOutput += Decoder_PCMOutput;            
+            //Decoder.PCMOutput += Decoder_PCMOutput;            
             Read();
         }
 
@@ -547,6 +578,12 @@ namespace INGdemo.Models
             Player.Write(e);
             AllSamples.AddRange(e);
         }
+
+        private void Decoder_SBCOutput(object sender, byte[] e)
+        {
+            //Player.Write(e);
+            //AllSamples.AddRange(e);          
+        } 
 
         async protected override void OnDisappearing()
         {

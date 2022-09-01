@@ -4,12 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 
 namespace INGdemo.Lib
-{   
-    //结构体
-    //枚举
-    //构造函数
-    //析构函数
-    
+{     
     public interface ISBCAudio
     {
         bool Write(Int16[] samples);
@@ -19,8 +14,35 @@ namespace INGdemo.Lib
 
     public class SBCDecoder
     {
+        //Queue<byte> inputStream = new Queue<byte>();  //初始化输入队列
+        private int inputSize = 24;
+        private int outputSize = 128;
+        private int Readindex;
+        private int WriteIndex;
+        private byte[] inputStream;
+        private byte[] outputStream;
+        private int inp = 0;  //解码器输入数组位置指示器,初始化为0
+        private int outp = 0;
+        private int decoded;
+        private bool dec_lock = true;
+
+
         sbc_struct  sbc;
 
+        public SBCDecoder()
+        {
+            Reset();
+        }
+
+        public event EventHandler<byte []> SBCOutput;
+
+        public void Reset()
+        {
+            inputStream = new byte[inputSize];
+            outputStream = new byte[outputSize];
+            Readindex = 0;
+            WriteIndex = 0;
+        }
         int sbc_decode(byte[] data, int input_len, byte[] output, int output_len, int written)
         {
             int i, ch, codesize, samples;
@@ -760,14 +782,27 @@ namespace INGdemo.Lib
         }
 
 
+        public void Decode(byte data)
+        {
+            inputStream[Readindex++] = data;
+            if  (Readindex > inputSize)
+            {
+                WriteIndex +=sbc_decode(inputStream, inputSize, 
+                                            outputStream, outputSize, decoded);
+                if(WriteIndex >= 5 * inputSize)
+                {
+                    SBCOutput.Invoke(this,outputStream);
+                    WriteIndex = 0;
+                }
+            }         
+        }
+
+        //与ADPCM解码不同
+        //数据需要达到一定长度之后才能进行解码
+        public void Decode(byte[] data)
+        {
+            foreach(var x in data) Decode(x);
+        }
      
     }
-
-
-
-    public class SBCEncoder
-    {
-
-    }
-
 }

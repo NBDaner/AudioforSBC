@@ -44,13 +44,13 @@ namespace INGdemo.UWP.Lib
             settings.EncodingProperties = encoding.Audio;
             CreateAudioGraphResult result = await AudioGraph.CreateAsync(settings);
 
-            if (result.Status != AudioGraphCreationStatus.Success)
+            if (result.Status != AudioGraphCreationStatus.Success)   //创建失败
                 return;
 
             graph = result.Graph;
             graph.EncodingProperties.SampleRate = samplingRate;
 
-            // Create a device output node
+            // Create a device output node  设备输出节点
             CreateAudioDeviceOutputNodeResult deviceOutputNodeResult = await graph.CreateDeviceOutputNodeAsync();
             if (deviceOutputNodeResult.Status != AudioDeviceNodeCreationStatus.Success)
                 return;
@@ -103,10 +103,10 @@ namespace INGdemo.UWP.Lib
 
         public bool Write(Int16[] samples)
         {
-            if ((graph == null)) return true;
+            if ((graph == null)) return true;  
             frameInputNode.AddFrame(GenerateAudioData(samples));
             FrameAdded++;
-            if (FrameAdded - FrameCompleted >= 5)
+            if (FrameAdded - FrameCompleted >= 5)   //每5包发送一次
                 frameInputNode.Start();
             return true;
         }
