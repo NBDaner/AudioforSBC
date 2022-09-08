@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace INGdemo.Lib
 {     
@@ -18,8 +20,7 @@ namespace INGdemo.Lib
         private int outp = 0;
         private int decoded;
         private bool dec_lock = true;
-
-        sbc_struct  sbc;
+        public static sbc_struct sbc;
 
         public SBCDecoder()
         {
@@ -34,9 +35,20 @@ namespace INGdemo.Lib
             outputStream = new byte[outputSize];
             Readindex = 0;
             WriteIndex = 0;
+
+            //frame结构体对象初始化
+            sbc.priv.frame.scale_factor = new uint[2,8];
+            sbc.priv.frame.sb_sample_f = new int[16,2,8];
+            sbc.priv.frame.sb_sample = new int[16,2,8];
+            sbc.priv.frame.pcm_sample = new short[2,16*8];
+
+            //sbc_decoder
+            sbc.priv.dec_state.V = new int[2,170];
+            sbc.priv.dec_state.offset = new int[2,16];
         }
         int sbc_decode(byte[] data, int input_len, byte[] output, int output_len, int written)
         {
+            System.Diagnostics.Debug.WriteLine("sbc_decode()!");
             int i, ch, codesize, samples;
             codesize = sbc_unpack_frame(data, sbc.priv.frame, input_len);
 
@@ -109,6 +121,7 @@ namespace INGdemo.Lib
 
         void sbc_decoder_init(sbc_decoder_state state, sbc_frame frame)
         {
+            System.Diagnostics.Debug.WriteLine("sbc_decoder_init()!");
             int i, ch;
             //set 0 for all elements of V[,]
             //数组V初始化全0
@@ -123,8 +136,9 @@ namespace INGdemo.Lib
         }
 
 
-        int sbc_unpack_frame(byte[] data, sbc_frame frame, int len)
+        public int sbc_unpack_frame(byte[] data, sbc_frame frame, int len)
         {
+            System.Diagnostics.Debug.WriteLine("sbc_unpack_frame()!");
             int consumed;
             byte[] crc_header = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
             int crc_pos = 0;
@@ -286,6 +300,7 @@ namespace INGdemo.Lib
 
         void sbc_calculate_bits(sbc_frame frame, int[,] bits)
         {
+            System.Diagnostics.Debug.WriteLine("sbc_calculate_bits()!");
             if (frame.subbands == 4)
                 sbc_calculate_bits_internal(frame, bits, 4);
             else
@@ -294,6 +309,7 @@ namespace INGdemo.Lib
 
         void sbc_calculate_bits_internal(sbc_frame frame, int[,] bits,int subbands)
         {
+            System.Diagnostics.Debug.WriteLine("sbc_calculate_bits_internal()!");
             byte sf = frame.frequency;
 
             if (frame.mode == Channels.MONO || frame.mode == Channels.DUAL_CHANNEL) {
@@ -489,6 +505,7 @@ namespace INGdemo.Lib
         
         ushort sbc_get_dec_codesize(sbc_struct sbc)
         {
+            System.Diagnostics.Debug.WriteLine("sbc_get_dec_codesize()!");
             int ret;
             byte subbands, channels, blocks, joint, bitpool;
  
@@ -517,6 +534,7 @@ namespace INGdemo.Lib
 
         ushort sbc_get_dec_frame_length(sbc_struct sbc)
         {
+            System.Diagnostics.Debug.WriteLine("sbc_get_dec_frame_length()!");
             ushort subbands, channels, blocks;
             //若未初始化
             if (!sbc.priv.init) {
@@ -536,6 +554,7 @@ namespace INGdemo.Lib
 
         int sbc_synthesize_audio(sbc_decoder_state state, sbc_frame frame)
         {
+            System.Diagnostics.Debug.WriteLine("sbc_synthesize_audio()!");
             int ch, blk;
 
             switch (sbc.priv.frame.subbands) {
@@ -560,6 +579,7 @@ namespace INGdemo.Lib
 
         void sbc_synthesize_four(sbc_decoder_state state, sbc_frame frame, int ch, int blk)
         {
+            System.Diagnostics.Debug.WriteLine("sbc_decode()!");
             int i, k, idx;
 
             //获取单通道的V值
@@ -619,6 +639,7 @@ namespace INGdemo.Lib
 
         void sbc_synthesize_eight(sbc_decoder_state state, sbc_frame frame, int ch, int blk)
         {
+            System.Diagnostics.Debug.WriteLine("sbc_synthesize_eight()!");
             int i, j, k, idx;
             int[] offset = new int[state.offset.Rank];
             for(i = 0; i < state.offset.Rank; i++)
@@ -777,8 +798,9 @@ namespace INGdemo.Lib
         public void Decode(byte data)
         {
             inputStream[Readindex++] = data;
-            if  (Readindex > inputSize)
+            if  (Readindex >= inputSize)
             {
+                Readindex = 0;
                 WriteIndex +=sbc_decode(inputStream, inputSize, 
                                             outputStream, outputSize, decoded);
                 if(WriteIndex >= 5 * inputSize)
@@ -793,6 +815,7 @@ namespace INGdemo.Lib
         //数据需要达到一定长度之后才能进行解码
         public void Decode(byte[] data)
         {
+            
             foreach(var x in data) Decode(x);
         }
      

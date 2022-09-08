@@ -486,7 +486,8 @@ namespace INGdemo.Models
             var samples = AllSamples.ToArray();
             try
             {
-                STTResult.Text = await engine.Recognize(samples);  //语音转文字，并输入到最下方的文本框
+                string s = await engine.Recognize(samples);
+                STTResult.Text = s;  //语音转文字，并输入到最下方的文本框
             }
             //catch捕捉try抛出的错误
             catch (Exception ex)
@@ -566,8 +567,18 @@ namespace INGdemo.Models
 
         private void CharOutput_ValueUpdated(object sender, Plugin.BLE.Abstractions.EventArgs.CharacteristicUpdatedEventArgs e)
         {
-            if (Decoder != null)
+            System.Diagnostics.Debug.WriteLine("CharOutput_ValueUpdated()!");
+            if (Decoder != null && AlgorithmRecognitionSettings.AUDIO_CODEC_MODE == AlgorithmRecognitionSettings.AUDIO_CODEC_ADPCM)
+            {
+                System.Diagnostics.Debug.WriteLine("ADPCM_Decoder");
                 Decoder.Decode(e.Characteristic.Value);
+            }
+            else if (sbc_Decoder != null && AlgorithmRecognitionSettings.AUDIO_CODEC_MODE == AlgorithmRecognitionSettings.AUDIO_CODEC_SBC)
+            {
+                sbc_Decoder.Decode(e.Characteristic.Value);
+            }
+            
+
             Device.BeginInvokeOnMainThread(() =>
                 label.Text = Utils.ByteArrayToString(e.Characteristic.Value)
             );
@@ -611,6 +622,8 @@ namespace INGdemo.Models
 
         private void Reset()
         {
+            //此种方法成功输出
+            System.Diagnostics.Debug.WriteLine("reset()!");
             AllSamples = new List<short>();
             if (AlgorithmRecognitionSettings.AUDIO_CODEC_MODE == AlgorithmRecognitionSettings.AUDIO_CODEC_SBC)
             {
