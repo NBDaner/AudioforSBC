@@ -7,7 +7,7 @@ namespace INGdemo.Lib
 {
     public interface IPCMAudio
     {
-        bool Write(Int16[] samples);
+        bool Write(short[] samples);
         void Play(int samplingRate);
         void Stop();
     }

@@ -5,13 +5,6 @@ using System.Text;
 
 namespace INGdemo.Lib
 {     
-    public interface ISBCAudio
-    {
-        bool Write(Int16[] samples);
-        void Play(int samplingRate);
-        void Stop();
-    }   
-
     public class SBCDecoder
     {
         //Queue<byte> inputStream = new Queue<byte>();  //初始化输入队列
@@ -25,7 +18,6 @@ namespace INGdemo.Lib
         private int outp = 0;
         private int decoded;
         private bool dec_lock = true;
-
 
         sbc_struct  sbc;
 

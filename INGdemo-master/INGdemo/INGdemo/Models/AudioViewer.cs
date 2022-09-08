@@ -40,7 +40,9 @@ namespace INGdemo.Models
     {
         public static string Algorithm_SBC = "SBC";
         public static string Algorithm_ADPCM = "ADPCM";
-        public static bool Algorithm_Switch2sbc = true;
+        public static byte AUDIO_CODEC_MODE = 2; //default
+        readonly public static byte AUDIO_CODEC_ADPCM = 1;
+        readonly public static byte AUDIO_CODEC_SBC = 2;
     }
 
     interface ISpeechRecognition
@@ -300,14 +302,14 @@ namespace INGdemo.Models
         }
     }
 
-    class AudioViewer : ContentPage    //内容页
+    class AudioViewer : ContentPage    //内容页  添加控件以及控件相关的操作
     {
         static public Guid GUID_SERVICE = new Guid("00000001-494e-4743-4849-505355554944");
         static public Guid GUID_CHAR_CTRL = new Guid("bf83f3f1-399a-414d-9035-ce64ceb3ff67");
         static public Guid GUID_CHAR_OUT = new Guid("bf83f3f2-399a-414d-9035-ce64ceb3ff67");
-        static public Guid GUID_CHAR_INFO = new Guid("10000001-494e-4743-4849-505355554944");
+        static public Guid GUID_CHAR_INFO = new Guid("10000001-494e-4743-4849-505355554944");  //相对于GUID_SERVICE 只有第一位发生反转
         static public string SERVICE_NAME = "INGChips Voice Output Service";
-        static public string ICON_STR = Char.ConvertFromUtf32(0x1F3A4);
+        static public string ICON_STR = Char.ConvertFromUtf32(0x1F3A4);  //对应麦克风图标
 
         readonly byte CMD_DIGCMD_DIGITAL_GAIN = 0;
         readonly byte CMD_MIC_OPEN = 1;
@@ -323,7 +325,6 @@ namespace INGdemo.Models
         ADPCMDecoder Decoder;
         SBCDecoder sbc_Decoder;
         IPCMAudio Player;
-        ISBCAudio Player_;
         Slider Gain;
         Label GainInd;
         int CurrentGain = 0;
@@ -433,16 +434,25 @@ namespace INGdemo.Models
 
         private void AlgorithmPicker_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (AlgorithmPicker.SelectedItem.ToString() == AlgorithmRecognitionSettings.Algorithm_ADPCM)
-            {
-                AlgorithmRecognitionSettings.Algorithm_Switch2sbc = false;
-            }
-            else if (AlgorithmPicker.SelectedItem.ToString() == AlgorithmRecognitionSettings.Algorithm_SBC)
-            {
-                AlgorithmRecognitionSettings.Algorithm_Switch2sbc = true;
-            }
-        }
 
+            if (AlgorithmPicker.SelectedItem.ToString() == AlgorithmRecognitionSettings.Algorithm_SBC)
+            {
+                AlgorithmRecognitionSettings.AUDIO_CODEC_MODE = 2;
+                Reset();
+            }
+            else if(AlgorithmPicker.SelectedItem.ToString() == AlgorithmRecognitionSettings.Algorithm_ADPCM)
+            {
+                AlgorithmRecognitionSettings.AUDIO_CODEC_MODE = 1;
+                Reset();
+            }
+            else
+            {
+                AlgorithmRecognitionSettings.AUDIO_CODEC_MODE = 0;
+                DisplayAlert("Warning", "There is no such algorithm to match!.", "OK"); 
+            }
+
+
+        }
         private void SamplingRatePicker_SelectedIndexChanged(object sender, EventArgs e)
         {
             EnginePicker.IsEnabled = int.Parse(SamplingRatePicker.SelectedItem.ToString()) == SpeechRecognitionSettings.SAMPLE_RATE;
@@ -487,12 +497,26 @@ namespace INGdemo.Models
 
         async private void BtnTalk_Pressed(object sender, EventArgs e)
         {
+            //按下麦克风采集键
 
             int samplingRate = int.Parse(SamplingRatePicker.SelectedItem.ToString());
             //识别音频编解码算法
             string audioCodec = AlgorithmPicker.SelectedItem.ToString();
             //选择解码器
-            Decoder.Reset();
+            switch(AlgorithmRecognitionSettings.AUDIO_CODEC_MODE)
+            {
+                case 1:
+                    Decoder.Reset();
+                    break;
+                case 2:
+                    sbc_Decoder.Reset();
+                    break;
+                default:
+                    await DisplayAlert("Warning", "Initialization error!.", "OK");
+                    break; 
+
+            }
+
             Player.Play(samplingRate);//调用音频播放器接口函数
             AllSamples.Clear();
             //启动音频输入异步处理函数
@@ -549,23 +573,10 @@ namespace INGdemo.Models
             );
         }
 
+        //析构函数
         public AudioViewer(IDevice ADevice, IReadOnlyList<IService> services)
         {
-            AllSamples = new List<short>();
-            if (AlgorithmRecognitionSettings.Algorithm_Switch2sbc)
-            {
-                sbc_Decoder = new SBCDecoder();
-                Player = DependencyService.Get<ISBCAudio>();
-                sbc_Decoder.SBCOutput += Decoder_SBCOutput;
-            }
-            else if (!AlgorithmRecognitionSettings.Algorithm_Switch2sbc)
-            {
-                Decoder = new ADPCMDecoder(32000 / 10);
-                Player = DependencyService.Get<IPCMAudio>();
-                Decoder.PCMOutput += Decoder_PCMOutput;
-            }
-
-
+            Reset();
             BleDevice = ADevice;
             InitUI();
             service = services.First((s) => s.Id == GUID_SERVICE);
@@ -581,8 +592,14 @@ namespace INGdemo.Models
 
         private void Decoder_SBCOutput(object sender, byte[] e)
         {
-            //Player.Write(e);
-            //AllSamples.AddRange(e);          
+            //单个数据类型转换
+            short[] se = new short[e.Length];
+            for (int i=0; i<e.Length; i++) 
+            {
+                se[i] = (short)(e[i]);
+            }
+            Player.Write(se);
+            AllSamples.AddRange(se);          
         } 
 
         async protected override void OnDisappearing()
@@ -591,5 +608,23 @@ namespace INGdemo.Models
             Player.Stop();
             if (BleDevice.State == DeviceState.Connected) await charOutput.StopUpdatesAsync();
         }
+
+        private void Reset()
+        {
+            AllSamples = new List<short>();
+            if (AlgorithmRecognitionSettings.AUDIO_CODEC_MODE == AlgorithmRecognitionSettings.AUDIO_CODEC_SBC)
+            {
+                sbc_Decoder = new SBCDecoder();
+                Player = DependencyService.Get<IPCMAudio>();
+                sbc_Decoder.SBCOutput += Decoder_SBCOutput;
+            }
+            else if (AlgorithmRecognitionSettings.AUDIO_CODEC_MODE == AlgorithmRecognitionSettings.AUDIO_CODEC_ADPCM)
+            {
+                Decoder = new ADPCMDecoder(32000 / 10);
+                Player = DependencyService.Get<IPCMAudio>();
+                Decoder.PCMOutput += Decoder_PCMOutput;
+            }
+        }
+
     }
 }
