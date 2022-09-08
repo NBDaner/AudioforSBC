@@ -368,7 +368,7 @@ namespace INGdemo.Models
 
             BtnTalk = new Button
             {
-                Text = ICON_STR + "\nPress to Capture",               
+                Text = "         " + ICON_STR + "\nPress to Capture",               
                 CornerRadius = 50,
                 Style = Device.Styles.TitleStyle
             };
